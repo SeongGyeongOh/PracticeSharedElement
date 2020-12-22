@@ -9,7 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.savedinstancestate.listSaver
 import androidx.compose.runtime.staticAmbientOf
 import androidx.compose.runtime.toMutableStateList
-import com.practice.practicesharedelement.User
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 class Navigator <T : Parcelable> private constructor(
     initialBackStack: List<T>,

@@ -5,7 +5,7 @@ import androidx.activity.OnBackPressedDispatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animate
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.material.Text
@@ -17,14 +17,15 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.*
 import androidx.compose.runtime.savedinstancestate.rememberSavedInstanceState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.AmbientDensity
 import androidx.compose.ui.platform.setContent
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import com.practice.practicesharedelement.navigation.Actions
 import com.practice.practicesharedelement.navigation.AmbientBackDispatcher
 import com.practice.practicesharedelement.navigation.Destination
@@ -32,19 +33,15 @@ import com.practice.practicesharedelement.navigation.Navigator
 import com.practice.practicesharedelement.ui.PracticeSharedElementTheme
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: MainViewModel
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
         setContent {
             PracticeSharedElementTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
                     RootScreen(
-                            backDispatcher = onBackPressedDispatcher,
-                            viewModel
+                            backDispatcher = onBackPressedDispatcher
                     )
                 }
             }
@@ -52,28 +49,29 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-
 @Composable
-fun RootScreen(backDispatcher: OnBackPressedDispatcher, viewModel: MainViewModel) {
+fun RootScreen(backDispatcher: OnBackPressedDispatcher) {
     val navigator: Navigator<Destination> = rememberSavedInstanceState(
         saver = Navigator.saver(backDispatcher)
     ) {
         Navigator(Destination.FirstScreen, backDispatcher)
     }
     val actions = remember(navigator) { Actions(navigator) }
-    val screenState = remember { mutableStateOf(false)}
+
     Box(Modifier.fillMaxSize()) {
         Providers(AmbientBackDispatcher provides backDispatcher) {
             Crossfade(current = navigator.current) { destination ->
                 when(destination) {
                     is Destination.FirstScreen -> {
                         Screen1(
-                            moveToNextScreen = actions.goToSecond,
-                                viewModel
+                            moveToNextScreen = actions.goToSecond
                         )
                     }
                     is Destination.SecondScreen -> {
-                        Screen2(destination, viewModel)
+                        Screen2(
+                                destination,
+                                backDispatcher
+                        )
                     }
                 }
             }
@@ -83,19 +81,15 @@ fun RootScreen(backDispatcher: OnBackPressedDispatcher, viewModel: MainViewModel
 
 @Composable
 fun Screen1(
-        moveToNextScreen: (item: User, offset: Offset) -> Unit,
-        viewModel: MainViewModel
+        moveToNextScreen: (item: User, offset: Offset, sizeList: List<Dp>) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(Modifier.fillMaxSize()) {
         WithConstraints() {
             LazyColumn(Modifier.fillMaxWidth()) {
                 items(tempList) { item ->
                     ListItem(
-                            moveToNextScreen = moveToNextScreen,
-                            item = item,
-                            viewModel
+                        moveToNextScreen = moveToNextScreen,
+                        item = item,
                     )
                 }
             }
@@ -106,102 +100,88 @@ fun Screen1(
 @Composable
 fun Screen2(
         item: Destination.SecondScreen,
-        viewModel: MainViewModel,
+        backDispatcher: OnBackPressedDispatcher,
 ) {
-    val xOffset = remember { mutableStateOf(item.offset.x)}
-    val yOffset = remember { mutableStateOf(item.offset.y) }
-    viewModel.screenState.observeForever {
-        if(!it) {
-            xOffset.value = 100f
-            yOffset.value = 0f
-        }else {
-            xOffset.value = item.offset.x
-            yOffset.value = item.offset.y
-        }
-    }
-
     WithConstraints {
-        Column(
-            modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Gray),
+        val screenState = remember { mutableStateOf(false) }
+        val xOffset = remember { mutableStateOf(item.offset.x)}
+        val yOffset = remember { mutableStateOf(item.offset.y) }
+        val width = remember { mutableStateOf(item.list[0])}
+        val height = remember { mutableStateOf(item.list[1])}
+        val alpha = remember { mutableStateOf(0f)}
+        if(screenState.value) {
+            xOffset.value = 0f
+            yOffset.value = 0f
+            width.value = with(AmbientDensity.current) {constraints.maxWidth.toDp()}
+            height.value = 300.dp
+            alpha.value = 1f
+        }
 
+        onActive(callback = {
+            screenState.value = true
+        })
+
+        backDispatcher.onBackPressed(
+
+        )
+
+
+        Box(
+            Modifier.fillMaxSize()
+                    .background(Color.Gray),
         ) {
             Image(
-                    imageResource(id = item.user.img),
-                    Modifier.preferredSize(50.dp)
-                            .offset(
-                                x = animate(target = xOffset.value.dp),
-                                y = animate(target = yOffset.value.dp)
-                            )
+                imageResource(id = item.user.img),
+                Modifier.preferredWidth(animate(target = width.value, animSpec = tween(1000)))
+                        .preferredHeight(animate(target = height.value, animSpec = tween(1000)))
+                        .offset(
+                                x = animate(
+                                        target = xOffset.value.dp,
+                                        animSpec = tween(1000)
+                                ),
+                                y = animate(
+                                        target = yOffset.value.dp,
+                                        animSpec = tween(1000)
+                                )
+                        )
+                        .alpha(animate(target = alpha.value, animSpec = tween(1000)))
             )
             Text(item.user.name)
         }
     }
-
 }
+
 
 @Composable
 fun ListItem(
-        moveToNextScreen: (item: User, offset: Offset) -> Unit,
+        moveToNextScreen: (item: User, offset: Offset, sizeList: List<Dp>) -> Unit,
         item: User,
-        viewModel: MainViewModel,
 ) {
     WithConstraints {
-        val expand = remember { mutableStateOf(false) }
-        val height = if (expand.value) 1000.dp else 50.dp
+        val height = 70.dp
+        val width = 70.dp
 
-        val x = remember { mutableStateOf(0.dp)}
-        val y = remember { mutableStateOf(0.dp)}
         val offset = remember { mutableStateOf(Offset(0))}
-        val modifier = remember {mutableStateOf(Modifier)}
 
-        Box(Modifier.fillMaxSize().animateContentSize()) {
-            Row(Modifier.fillMaxWidth()
-                    .height(height = height)
-                    .clickable(onClick = {
-                        moveToNextScreen(item, offset.value)
-                        viewModel._screenState.value = false
-                    })
-//                    .clickable(onClick = { moveToNextScreen(item, x.value.value.toInt(), y.value.value.toInt()) })
-//                    .clickable(onClick = {Log.d("asdf", "${offset.value}")})
+        Box(Modifier.fillMaxSize()) {
+            Row(
+                Modifier.fillMaxWidth()
+                        .preferredHeight(height = height)
+                        .preferredWidth(width)
+                        .clickable(onClick = {
+                            moveToNextScreen(item, offset.value, listOf(height, width))
+                        })
             )
             {
                 Image(
                     imageResource(id = item.img),
-                    modifier.value.preferredSize(50.dp)
+                    Modifier.preferredSize(50.dp)
                             .onGloballyPositioned {
                                 offset.value = it.positionInRoot.div(3f)
-//                                y.value = it.globalPosition.y.dp
                             }
-//                        .offset(
-////                            x = androidx.compose.animation.animate(target = imageX.value.dp),
-////                            y = androidx.compose.animation.animate(target = imageY.value.dp)
-//                            x = 100.dp,
-//                            y = 0.dp
-//                        )
                 )
                 Text(item.name)
             }
-
-        }
-    }
-}
-
-@Composable
-fun ItemScreen(item: User, listState: MutableState<Boolean>) {
-    WithConstraints() {
-        val width = with(AmbientDensity.current) { constraints.maxWidth.toDp()}
-        val height = with(AmbientDensity.current) { constraints.maxWidth.toDp()}
-        Column(
-            Modifier.width(width)
-                .height(height)
-                .background(Color.Gray)
-                .animateContentSize()
-                .clickable(onClick = {listState.value = !listState.value})
-        ) {
-            Image(imageResource(id = item.img))
-            Text(item.name)
         }
     }
 }
