@@ -127,7 +127,7 @@ fun Screen2(
         val alpha = remember { mutableStateOf(0f)}
 
         if(screenState.value) {
-            xOffset.value = 50f
+            xOffset.value = 0f
             yOffset.value = 0f
             width.value = with(AmbientDensity.current) {constraints.maxWidth.toDp()}
             height.value = 300.dp
@@ -140,7 +140,12 @@ fun Screen2(
         }
 
         onActive(callback = {
+            mainViewModel.screenState.value = false
             screenState.value = true
+        })
+
+        onDispose(callback = {
+            mainViewModel.screenState.value = true
         })
 
         Box(
@@ -181,8 +186,8 @@ fun ListItem(
 ) {
     WithConstraints {
         val screenState = remember { mutableStateOf(false) }
-        val fixedWidth = 70.dp
-        val fixedHeight = 70.dp
+        val fixedWidth = 100.dp
+        val fixedHeight = 100.dp
         val width = remember { mutableStateOf(fixedWidth) }
         val height = remember { mutableStateOf(fixedHeight) }
         val xOffset = remember { mutableStateOf(0f) }
@@ -202,60 +207,40 @@ fun ListItem(
             yOffset.value = it
         }
 
-        if(screenState.value) {
+        if(mainViewModel.screenState.value == true) {
             width.value = fixedWidth
             height.value = fixedHeight
             xOffset.value = 0f
             yOffset.value = 0f
         }
 
-        onActive(callback = {
-            screenState.value = true
-        })
-
-        Box(Modifier.fillMaxSize()) {
-            Row() {
-                if(itemIndex == mainViewModel.index.value) {
-                    Image(
-                            imageResource(id = item.img),
-                            Modifier.onGloballyPositioned {
-                                offset.value = it.positionInRoot.div(3f)
-                            }
-                                    .preferredWidth(animate(target = width.value, animSpec = tween(3000)))
-                                    .preferredHeight(animate(target = height.value, animSpec = tween(3000)))
-                                    .offset(
-                                            x = animate(target = xOffset.value.dp, animSpec = tween(3000)),
-                                            y = animate(target = yOffset.value.dp, animSpec = tween(3000))
-                                    )
-                                    .clickable(onClick = {
-                                        moveToNextScreen(item, offset.value, listOf(height.value, width.value))
-                                        mainViewModel.xOffset.value = offset.value.x
-                                        mainViewModel.yOffset.value = offset.value.y
-                                        mainViewModel.width.value = width.value
-                                        mainViewModel.height.value = height.value
-                                        mainViewModel.index.value = itemIndex
-                                    })
-                    )
-                } else {
-                    Image(
-                            imageResource(id = item.img),
-                            Modifier.onGloballyPositioned {
-                                offset.value = it.globalPosition.div(3f)
-                            }
-                                    .preferredWidth(fixedWidth)
-                                    .preferredHeight(fixedHeight)
-                                    .clickable(onClick = {
-                                        moveToNextScreen(item, offset.value, listOf(height.value, width.value))
-                                        mainViewModel.xOffset.value = offset.value.x
-                                        mainViewModel.yOffset.value = offset.value.y
-                                        mainViewModel.width.value = width.value
-                                        mainViewModel.height.value = height.value
-                                        mainViewModel.index.value = itemIndex
-                                    })
-                    )
-                }
-                Text(item.name)
-            }
+        Row(Modifier.fillMaxWidth()) {
+            Image(
+                    imageResource(id = item.img),
+                    Modifier.onGloballyPositioned {
+                        offset.value = it.positionInRoot.div(3f)
+                    }
+                            .preferredWidth(
+                                    animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
+                                            animSpec = tween(3000)))
+                            .preferredHeight(
+                                    animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
+                                            animSpec = tween(3000)))
+                            .offset(
+                                    x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
+                                            animSpec = tween(3000)),
+                                    y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
+                                            animSpec = tween(3000)))
+                            .clickable(onClick = {
+                                moveToNextScreen(item, offset.value, listOf(height.value, width.value))
+                                mainViewModel.xOffset.value = offset.value.x
+                                mainViewModel.yOffset.value = offset.value.y
+                                mainViewModel.width.value = width.value
+                                mainViewModel.height.value = height.value
+                                mainViewModel.index.value = itemIndex
+                            })
+            )
+            Text(item.name)
         }
     }
 }
