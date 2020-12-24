@@ -1,260 +1,167 @@
 package com.practice.practicesharedelement
 
 import android.os.Bundle
-import android.util.Log
-import androidx.activity.OnBackPressedDispatcher
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animate
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.material.Text
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.*
+import androidx.compose.animation.transition
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.runtime.*
-import androidx.compose.runtime.savedinstancestate.rememberSavedInstanceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawOpacity
+import androidx.compose.ui.geometry.Offset.Companion.Infinite
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.*
-import androidx.compose.ui.platform.AmbientContext
-import androidx.compose.ui.platform.AmbientDensity
 import androidx.compose.ui.platform.setContent
-import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.viewModel
 import androidx.lifecycle.ViewModelProvider
-import com.practice.practicesharedelement.navigation.Actions
-import com.practice.practicesharedelement.navigation.AmbientBackDispatcher
-import com.practice.practicesharedelement.navigation.Destination
-import com.practice.practicesharedelement.navigation.Navigator
-import com.practice.practicesharedelement.ui.PracticeSharedElementTheme
+import com.practice.practicesharedelement.ui.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mainViewModel: MainViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-
         setContent {
-            PracticeSharedElementTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(color = MaterialTheme.colors.background) {
-                    RootScreen(
-                            backDispatcher = onBackPressedDispatcher,
-                            mainViewModel
-                    )
-                }
-            }
+            AnimatedFavButton()
         }
     }
 }
 
+enum class ButtonState {
+    IDLE, PRESSED
+}
+
 @Composable
-fun RootScreen(
-        backDispatcher: OnBackPressedDispatcher,
-        mainViewModel: MainViewModel
-) {
-    val navigator: Navigator<Destination> = rememberSavedInstanceState(
-        saver = Navigator.saver(backDispatcher)
+fun AnimatedFavButton() {
+    val buttonState = remember{ mutableStateOf(ButtonState.IDLE) }
+
+    val transitionDefinition = transitionDefinition<ButtonState> {
+        state(ButtonState.IDLE) {
+            this[width] = 300.dp
+            this[roundedCorners] = 6
+            this[backgroundColor] = purple500
+            this[textColor] = Color.White
+            this[textOpacity] = 1f
+            this[iconOpacity] = 0f
+            this[pressedHeartSize] = 48.dp
+            this[idleHeartSize] = 24.dp
+        }
+
+        state(ButtonState.PRESSED) {
+            this[width] = 60.dp
+            this[roundedCorners] = 50
+            this[backgroundColor] = Color.White
+            this[textColor] = purple500
+            this[textOpacity] = 0f
+            this[iconOpacity] = 1f
+            this[pressedHeartSize] = 48.dp
+            this[idleHeartSize] = 24.dp
+        }
+
+        transition(ButtonState.IDLE, ButtonState.PRESSED) {
+            width using tween(1500)
+            roundedCorners using tween(
+                durationMillis = 1500,
+                easing = FastOutLinearInEasing
+            )
+            backgroundColor using tween(3000)
+            textColor using tween(500)
+            textOpacity using tween(1500)
+            iconOpacity using tween(1500)
+            pressedHeartSize using keyframes {
+                durationMillis = 1500
+                48.dp at 900
+                12.dp at 1300
+            }
+        }
+
+        transition(ButtonState.PRESSED to ButtonState.IDLE) {
+            width using tween(1500)
+            roundedCorners using tween (
+                durationMillis = 1500,
+                easing = FastOutLinearInEasing
+            )
+            backgroundColor using tween(3000)
+            textColor using tween(500)
+            textOpacity using tween(3000)
+            iconOpacity using tween(3000)
+            idleHeartSize using repeatable (
+                animation = keyframes {
+                    durationMillis = 2000
+                    24.dp at 1400
+                    12.dp at 1500
+                    24.dp at 1600
+                    12.dp at 1700
+                }, iterations = 5
+            )
+        }
+    }
+    val toState = if(buttonState.value == ButtonState.IDLE) {
+        ButtonState.PRESSED
+    } else {
+        ButtonState.IDLE
+    }
+
+    val state = transition(
+        definition = transitionDefinition,
+        initState = buttonState.value,
+        toState = toState
+    )
+
+    FavButton(buttonState = buttonState, state = state)
+}
+
+@Composable
+fun FavButton(buttonState: MutableState<ButtonState>, state: TransitionState) {
+    Button(
+            border = BorderStroke(1.dp, purple500),
+            colors = ButtonDefaults.buttonColors(backgroundColor = state[backgroundColor]),
+            shape = RoundedCornerShape(state[roundedCorners]),
+            modifier = Modifier.size(state[width], 60.dp),
+            onClick = {
+                buttonState.value = if(buttonState.value == ButtonState.IDLE) {
+                    ButtonState.PRESSED
+                } else {
+                    ButtonState.IDLE
+                }
+            }
     ) {
-        Navigator(Destination.FirstScreen, backDispatcher)
+        ButtonContent(buttonState, state)
     }
-    val actions = remember(navigator) { Actions(navigator) }
+}
 
-    Box(Modifier.fillMaxSize()) {
-        Providers(AmbientBackDispatcher provides backDispatcher) {
-            Crossfade(current = navigator.current) { destination ->
-                when(destination) {
-                    is Destination.FirstScreen -> {
-                        Screen1(
-                            moveToNextScreen = actions.goToSecond,
-                            mainViewModel
-                        )
-                    }
-                    is Destination.SecondScreen -> {
-                        Screen2(
-                                destination,
-                                backDispatcher,
-                                mainViewModel
-                        )
-                    }
-                }
+@Composable
+fun ButtonContent(buttonState: MutableState<ButtonState>, state: TransitionState) {
+    if(buttonState.value == ButtonState.PRESSED) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.width(24.dp), Arrangement.Center) {
+                Icon(
+                        tint = state[textColor],
+                        imageVector = Icons.Default.FavoriteBorder,
+                        modifier = Modifier.size(state[idleHeartSize])
+                )
             }
-        }
-    }
-}
-
-@Composable
-fun Screen1(
-        moveToNextScreen: (item: User, offset: Offset, sizeList: List<Dp>) -> Unit,
-        mainViewModel: MainViewModel
-) {
-    Column(Modifier.fillMaxSize()) {
-        WithConstraints() {
-            LazyColumn(Modifier.fillMaxWidth()) {
-                itemsIndexed(tempList) { index, item ->
-                    ListItem(moveToNextScreen = moveToNextScreen,
-                            item = item,
-                            itemIndex = index,
-                            mainViewModel = mainViewModel
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Screen2(
-        item: Destination.SecondScreen,
-        backDispatcher: OnBackPressedDispatcher,
-        mainViewModel: MainViewModel,
-) {
-    WithConstraints {
-        val screenState = remember { mutableStateOf(false) }
-        val xOffset = remember { mutableStateOf(item.offset.x)}
-        val yOffset = remember { mutableStateOf(item.offset.y) }
-        val width = remember { mutableStateOf(item.list[0])}
-        val height = remember { mutableStateOf(item.list[1])}
-        val alpha = remember { mutableStateOf(0f)}
-
-        if(screenState.value) {
-            xOffset.value = 0f
-            yOffset.value = 0f
-            width.value = with(AmbientDensity.current) {constraints.maxWidth.toDp()}
-            height.value = 300.dp
-            alpha.value = 1f
-
-            mainViewModel.xOffset.value = xOffset.value
-            mainViewModel.yOffset.value = yOffset.value
-            mainViewModel.width.value = width.value
-            mainViewModel.height.value = height.value
-        }
-
-        onActive(callback = {
-            mainViewModel.screenState.value = false
-            screenState.value = true
-        })
-
-        onDispose(callback = {
-            mainViewModel.screenState.value = true
-        })
-
-        Box(
-            Modifier.fillMaxSize()
-                    .background(Color.Gray),
-        ) {
-            Image(
-                    imageResource(id = item.user.img),
-                    Modifier.preferredWidth(animate(target = width.value, animSpec = tween(1000)))
-                            .preferredHeight(animate(target = height.value, animSpec = tween(1000)))
-                            .offset (
-                                    x = animate(
-                                            target = xOffset.value.dp,
-                                            animSpec = tween(1000)
-                                    ),
-                                    y = animate(
-                                            target = yOffset.value.dp,
-                                            animSpec = tween(1000)
-                                    )
-                            )
-                            .alpha(animate(target = alpha.value, animSpec = tween(1000)))
-                            .onGloballyPositioned {
-                                mainViewModel.xOffset.value = it.boundsInParent.topLeft.x
-                                mainViewModel.yOffset.value = it.boundsInParent.topLeft.y
-                            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                    "ADD TO FAVORITES!",
+                    softWrap = false,
+                    color = state[textColor],
+                    modifier = Modifier.alpha(state[textOpacity])
             )
-            Text(item.user.name)
         }
+    } else {
+        Icon(
+                tint = state[textColor],
+                imageVector = Icons.Default.Favorite,
+                modifier = Modifier.size(state[pressedHeartSize]).alpha(state[iconOpacity]) //4
+        )
     }
+
 }
-
-@Composable
-fun ListItem(
-        moveToNextScreen: (item: User, offset: Offset, sizeList: List<Dp>) -> Unit,
-        item: User,
-        mainViewModel: MainViewModel,
-        itemIndex: Int,
-) {
-    WithConstraints {
-        val screenState = remember { mutableStateOf(false) }
-        val fixedWidth = 100.dp
-        val fixedHeight = 100.dp
-        val width = remember { mutableStateOf(fixedWidth) }
-        val height = remember { mutableStateOf(fixedHeight) }
-        val xOffset = remember { mutableStateOf(0f) }
-        val yOffset = remember { mutableStateOf(0f) }
-        val offset = remember { mutableStateOf(Offset(0))}
-
-        mainViewModel.height.observeForever{
-            height.value = it
-        }
-        mainViewModel.width.observeForever{
-            width.value = it
-        }
-        mainViewModel.xOffset.observeForever{
-            xOffset.value = it
-        }
-        mainViewModel.yOffset.observeForever{
-            yOffset.value = it
-        }
-
-        if(mainViewModel.screenState.value == true) {
-            width.value = fixedWidth
-            height.value = fixedHeight
-            xOffset.value = 0f
-            yOffset.value = 0f
-        }
-
-        Row(Modifier.fillMaxWidth()) {
-            Image(
-                    imageResource(id = item.img),
-                    Modifier.onGloballyPositioned {
-                        offset.value = it.positionInRoot.div(3f)
-                    }
-                            .preferredWidth(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
-                                            animSpec = tween(3000)))
-                            .preferredHeight(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
-                                            animSpec = tween(3000)))
-                            .offset(
-                                    x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
-                                            animSpec = tween(3000)),
-                                    y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
-                                            animSpec = tween(3000)))
-                            .clickable(onClick = {
-                                moveToNextScreen(item, offset.value, listOf(height.value, width.value))
-                                mainViewModel.xOffset.value = offset.value.x
-                                mainViewModel.yOffset.value = offset.value.y
-                                mainViewModel.width.value = width.value
-                                mainViewModel.height.value = height.value
-                                mainViewModel.index.value = itemIndex
-                            })
-            )
-            Text(item.name)
-        }
-    }
-}
-
-data class User(val name: String, val img: Int)
-
-val tempList = listOf(
-    User("멍멍1", R.drawable.img_temp),
-    User("멍멍2", R.drawable.img_temp),
-    User("멍멍3", R.drawable.img_temp),
-    User("멍멍4", R.drawable.img_temp),
-    User("멍멍5", R.drawable.img_temp),
-    User("멍멍6", R.drawable.img_temp),
-    User("멍멍7", R.drawable.img_temp),
-    User("멍멍8", R.drawable.img_temp),
-    User("멍멍9", R.drawable.img_temp),
-)
