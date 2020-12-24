@@ -166,7 +166,6 @@ fun Screen2(
                                 mainViewModel.xOffset.value = it.boundsInParent.topLeft.x
                                 mainViewModel.yOffset.value = it.boundsInParent.topLeft.y
                             }
-                            .clickable(onClick = { Log.d("asdf", "${mainViewModel.xOffset.value} : ${mainViewModel.yOffset.value}") })
             )
             Text(item.user.name)
         }
