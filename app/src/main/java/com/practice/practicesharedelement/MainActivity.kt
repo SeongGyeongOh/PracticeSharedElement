@@ -1,34 +1,27 @@
 package com.practice.practicesharedelement
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.material.Text
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
-import androidx.compose.ui.platform.AmbientDensity
 import androidx.compose.ui.platform.setContent
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavDirections
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.*
-import com.practice.practicesharedelement.ui.PracticeSharedElementTheme
+import java.io.Serializable
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mainViewModel: MainViewModel
@@ -50,13 +43,12 @@ fun RootScreen(
 ) {
     val navController = rememberNavController()
     Box(Modifier.fillMaxSize()) {
-        NavHost(navController = navController, startDestination = "first/{id}") {
-            composable(route = "first/{id}",
-                    arguments = listOf(navArgument("id") { type = NavType.StringType })) {
+        NavHost(navController = navController, startDestination = "first") {
+            composable(route = "first"){
                 Screen1(navController, mainViewModel = mainViewModel)
             }
-            composable("second") {
-                Screen2()
+            composable("second") { it ->
+                Screen2(mainViewModel = mainViewModel)
             }
         }
     }
@@ -84,8 +76,7 @@ fun Screen1(
 
 @Composable
 fun Screen2(
-//        item: Destination.SecondScreen,
-//        mainViewModel: MainViewModel,
+        mainViewModel: MainViewModel
 ) {
 //    WithConstraints {
 //        val screenState = remember { mutableStateOf(false) }
@@ -144,9 +135,10 @@ fun Screen2(
 //            Text(item.user.name)
 //        }
 //    }
-    Text("screen2")
+    Text("asdf")
 }
 
+@SuppressLint("ResourceType")
 @Composable
 fun ListItem(
         navController: NavHostController,
@@ -231,7 +223,7 @@ fun ListItem(
     }
 }
 
-data class User(val name: String, val img: Int)
+class User(val name: String, val img: Int): Serializable
 
 val tempList = listOf(
     User("멍멍1", R.drawable.img_temp),
