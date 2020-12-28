@@ -82,7 +82,6 @@ fun RootScreen(
                     is Destination.SecondScreen -> {
                         Screen2(
                                 destination,
-                                backDispatcher,
                                 mainViewModel
                         )
                     }
@@ -115,21 +114,20 @@ fun Screen1(
 @Composable
 fun Screen2(
         item: Destination.SecondScreen,
-        backDispatcher: OnBackPressedDispatcher,
         mainViewModel: MainViewModel,
 ) {
     WithConstraints {
         val screenState = remember { mutableStateOf(false) }
-        val xOffset = remember { mutableStateOf(item.offset.x)}
+        val xOffset = remember { mutableStateOf(item.offset.x) }
         val yOffset = remember { mutableStateOf(item.offset.y) }
-        val width = remember { mutableStateOf(item.list[0])}
-        val height = remember { mutableStateOf(item.list[1])}
-        val alpha = remember { mutableStateOf(0f)}
+        val width = remember { mutableStateOf(item.list[0]) }
+        val height = remember { mutableStateOf(item.list[1]) }
+        val alpha = remember { mutableStateOf(0f) }
 
         if(screenState.value) {
             xOffset.value = 0f
             yOffset.value = 0f
-            width.value = with(AmbientDensity.current) {constraints.maxWidth.toDp()}
+            width.value = with(AmbientDensity.current) { constraints.maxWidth.toDp() }
             height.value = 300.dp
             alpha.value = 1f
 
@@ -204,7 +202,7 @@ fun ListItem(
             xOffset.value = it
         }
         mainViewModel.yOffset.observeForever{
-            yOffset.value = it
+            yOffset.value = it - (fixedHeight.value * itemIndex)
         }
 
         if(mainViewModel.screenState.value == true) {
@@ -222,15 +220,15 @@ fun ListItem(
                     }
                             .preferredWidth(
                                     animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
-                                            animSpec = tween(3000)))
+                                            animSpec = tween(1000)))
                             .preferredHeight(
                                     animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
-                                            animSpec = tween(3000)))
+                                            animSpec = tween(1000)))
                             .offset(
                                     x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
-                                            animSpec = tween(3000)),
+                                            animSpec = tween(1000)),
                                     y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
-                                            animSpec = tween(3000)))
+                                            animSpec = tween(1000)))
                             .clickable(onClick = {
                                 moveToNextScreen(item, offset.value, listOf(height.value, width.value))
                                 mainViewModel.xOffset.value = offset.value.x
