@@ -174,6 +174,7 @@ fun ListItem(
             screenState.value = true
         })
 
+
         if(screenState.value) {
             width.value = fixedWidth
             height.value = fixedHeight
