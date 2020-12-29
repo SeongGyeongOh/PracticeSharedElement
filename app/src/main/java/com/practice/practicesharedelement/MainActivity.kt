@@ -1,23 +1,25 @@
 package com.practice.practicesharedelement
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.material.Text
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.AmbientDensity
 import androidx.compose.ui.platform.setContent
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
@@ -60,7 +62,7 @@ fun Screen1(
         mainViewModel: MainViewModel
 ) {
     Column(Modifier.fillMaxSize()) {
-        WithConstraints() {
+        WithConstraints {
             LazyColumn(Modifier.fillMaxWidth()) {
                 itemsIndexed(tempList) { index, item ->
                     ListItem(navController = navController,
@@ -78,67 +80,66 @@ fun Screen1(
 fun Screen2(
         mainViewModel: MainViewModel
 ) {
-//    WithConstraints {
-//        val screenState = remember { mutableStateOf(false) }
-//        val xOffset = remember { mutableStateOf(item.offset.x) }
-//        val yOffset = remember { mutableStateOf(item.offset.y) }
-//        val width = remember { mutableStateOf(item.list[0]) }
-//        val height = remember { mutableStateOf(item.list[1]) }
-//        val alpha = remember { mutableStateOf(0f) }
-//
-//        if(screenState.value) {
-//            xOffset.value = 0f
-//            yOffset.value = 0f
-//            width.value = with(AmbientDensity.current) { constraints.maxWidth.toDp() }
-//            height.value = 300.dp
-//            alpha.value = 1f
-//
-//            mainViewModel.xOffset.value = xOffset.value
-//            mainViewModel.yOffset.value = yOffset.value
-//            mainViewModel.width.value = width.value
-//            mainViewModel.height.value = height.value
-//        }
-//
-//        onActive(callback = {
-//            mainViewModel.screenState.value = false
-//            screenState.value = true
-//        })
-//
-//        onDispose(callback = {
-//            mainViewModel.screenState.value = true
-//        })
-//
-//        Box(
-//            Modifier.fillMaxSize()
-//                    .background(Color.Gray),
-//        ) {
-//            Image(
-//                    imageResource(id = item.user.img),
-//                    Modifier.preferredWidth(animate(target = width.value, animSpec = tween(1000)))
-//                            .preferredHeight(animate(target = height.value, animSpec = tween(1000)))
-//                            .offset (
-//                                    x = animate(
-//                                            target = xOffset.value.dp,
-//                                            animSpec = tween(1000)
-//                                    ),
-//                                    y = animate(
-//                                            target = yOffset.value.dp,
-//                                            animSpec = tween(1000)
-//                                    )
-//                            )
-//                            .alpha(animate(target = alpha.value, animSpec = tween(1000)))
-//                            .onGloballyPositioned {
-//                                mainViewModel.xOffset.value = it.boundsInParent.topLeft.x
-//                                mainViewModel.yOffset.value = it.boundsInParent.topLeft.y
-//                            }
-//            )
-//            Text(item.user.name)
-//        }
-//    }
-    Text("asdf")
+    WithConstraints {
+        val screenState = remember { mutableStateOf(false) }
+        val xOffset = remember { mutableStateOf(mainViewModel.xOffset.value) }
+        val yOffset = remember { mutableStateOf(mainViewModel.yOffset.value) }
+        val width = remember { mutableStateOf(mainViewModel.width.value) }
+        val height = remember { mutableStateOf(mainViewModel.height.value) }
+        val alpha = remember { mutableStateOf(0f) }
+
+
+        if(screenState.value) {
+            xOffset.value = 0f
+            yOffset.value = 0f
+            width.value = with(AmbientDensity.current) { constraints.maxWidth.toDp() }
+            height.value = 300.dp
+            alpha.value = 1f
+
+            mainViewModel.xOffset.value = xOffset.value
+            mainViewModel.yOffset.value = yOffset.value
+            mainViewModel.width.value = width.value
+            mainViewModel.height.value = height.value
+        }
+
+        onActive(callback = {
+            mainViewModel.screenState.value = false
+            screenState.value = true
+        })
+
+        onDispose(callback = {
+            mainViewModel.screenState.value = true
+        })
+
+        Box(
+            Modifier.fillMaxSize()
+                    .background(Color.Gray),
+        ) {
+            Image(
+                    imageResource(id = mainViewModel.user.value!!.img),
+                    Modifier.preferredWidth(animate(target = width.value!!, animSpec = tween(1000)))
+                            .preferredHeight(animate(target = height.value!!, animSpec = tween(1000)))
+                            .offset (
+                                    x = animate(
+                                            target = xOffset.value!!.dp,
+                                            animSpec = tween(1000)
+                                    ),
+                                    y = animate(
+                                            target = yOffset.value!!.dp,
+                                            animSpec = tween(1000)
+                                    )
+                            )
+                            .alpha(animate(target = alpha.value, animSpec = tween(1000)))
+                            .onGloballyPositioned {
+                                mainViewModel.xOffset.value = it.boundsInParent.topLeft.x
+                                mainViewModel.yOffset.value = it.boundsInParent.topLeft.y
+                            }
+            )
+            Text(mainViewModel.user.value!!.name)
+        }
+    }
 }
 
-@SuppressLint("ResourceType")
 @Composable
 fun ListItem(
         navController: NavHostController,
@@ -169,7 +170,11 @@ fun ListItem(
             yOffset.value = it - (fixedHeight.value * itemIndex)
         }
 
-        if(mainViewModel.screenState.value == true) {
+        onActive(callback = {
+            screenState.value = true
+        })
+
+        if(screenState.value) {
             width.value = fixedWidth
             height.value = fixedHeight
             xOffset.value = 0f
@@ -183,31 +188,15 @@ fun ListItem(
                         offset.value = it.positionInRoot.div(3f)
                     }
                             .preferredWidth(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) {
-                                        width.value
-                                    } else {
-                                        fixedWidth
-                                    },
+                                    animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
                                             animSpec = tween(1000)))
                             .preferredHeight(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) {
-                                        height.value
-                                    } else {
-                                        fixedHeight
-                                    },
+                                    animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
                                             animSpec = tween(1000)))
                             .offset(
-                                    x = animate(target = if (itemIndex == mainViewModel.index.value) {
-                                        xOffset.value.dp
-                                    } else {
-                                        0.dp
-                                    },
+                                    x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
                                             animSpec = tween(1000)),
-                                    y = animate(target = if (itemIndex == mainViewModel.index.value) {
-                                        yOffset.value.dp
-                                    } else {
-                                        0.dp
-                                    },
+                                    y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
                                             animSpec = tween(1000)))
                             .clickable(onClick = {
                                 navController.navigate("second")
@@ -216,6 +205,7 @@ fun ListItem(
                                 mainViewModel.width.value = width.value
                                 mainViewModel.height.value = height.value
                                 mainViewModel.index.value = itemIndex
+                                mainViewModel.user.value = item
                             })
             )
             Text(item.name)

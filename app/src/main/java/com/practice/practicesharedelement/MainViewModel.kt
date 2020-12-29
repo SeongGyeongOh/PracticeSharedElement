@@ -14,4 +14,5 @@ class MainViewModel: ViewModel() {
     val height = MutableLiveData<Dp>()
     val index = MutableLiveData<Int>()
     val screenState = MutableLiveData<Boolean>()
+    val user = MutableLiveData<User>()
 }
