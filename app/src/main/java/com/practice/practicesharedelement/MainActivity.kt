@@ -182,39 +182,41 @@ fun ListItem(
             yOffset.value = 0f
         }
 
-        Row(Modifier.fillMaxWidth()) {
-            Image(
-                    imageResource(id = item.img),
-                    Modifier.onGloballyPositioned {
-                        offset.value = it.positionInRoot.div(3f)
-                    }
-                            .preferredWidth(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
-                                            animSpec = tween(1000)))
-                            .preferredHeight(
-                                    animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
-                                            animSpec = tween(1000)))
-                            .offset(
-                                    x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
-                                            animSpec = tween(1000)),
-                                    y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
-                                            animSpec = tween(1000)))
-                            .clickable(onClick = {
-                                navController.navigate("second")
-                                mainViewModel.xOffset.value = offset.value.x
-                                mainViewModel.yOffset.value = offset.value.y
-                                mainViewModel.width.value = width.value
-                                mainViewModel.height.value = height.value
-                                mainViewModel.index.value = itemIndex
-                                mainViewModel.user.value = item
-                            })
-            )
-            Text(item.name)
+        Box(Modifier.fillMaxWidth().preferredHeight(fixedHeight)){
+            Row() {
+                Image(
+                        imageResource(id = item.img),
+                        Modifier.onGloballyPositioned {
+                            offset.value = it.positionInRoot.div(3f)
+                        }
+                                .width(
+                                        animate(target = if (itemIndex == mainViewModel.index.value) { width.value } else { fixedWidth },
+                                                animSpec = tween(1000)))
+                                .height(
+                                        animate(target = if (itemIndex == mainViewModel.index.value) { height.value } else { fixedHeight },
+                                                animSpec = tween(1000)))
+                                .offset(
+                                        x = animate(target = if (itemIndex == mainViewModel.index.value) { xOffset.value.dp } else {0.dp},
+                                                animSpec = tween(1000)),
+                                        y = animate(target = if(itemIndex == mainViewModel.index.value) { yOffset.value.dp } else {0.dp},
+                                                animSpec = tween(1000)))
+                                .clickable(onClick = {
+                                    navController.navigate("second")
+                                    mainViewModel.xOffset.value = offset.value.x
+                                    mainViewModel.yOffset.value = offset.value.y
+                                    mainViewModel.width.value = width.value
+                                    mainViewModel.height.value = height.value
+                                    mainViewModel.index.value = itemIndex
+                                    mainViewModel.user.value = item
+                                })
+                )
+                Text(item.name)
+            }
         }
     }
 }
 
-class User(val name: String, val img: Int): Serializable
+class User(val name: String, val img: Int)
 
 val tempList = listOf(
     User("멍멍1", R.drawable.img_temp),
